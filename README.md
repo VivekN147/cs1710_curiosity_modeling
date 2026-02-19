@@ -6,6 +6,7 @@ What do we want to model?
 From LLM:
 
 Make the Idea Technically Well-Defined
+
 Right now the scope is slightly broad. Consider pinning down:
 * Core entities (likely minimum model)
 * Student
@@ -17,6 +18,7 @@ Right now the scope is slightly broad. Consider pinning down:
 * Schedule/plan
 
 Key questions your model should answer
+
 Pick 2–4 concrete ones, for example:
 * Does a valid graduation plan exist within N semesters?
 * Can over-enrollment occur?
@@ -24,6 +26,7 @@ Pick 2–4 concrete ones, for example:
 * What is the minimum number of semesters needed?
 
 Be precise about capacity
+
 Decide early:
 * Is capacity global per course offering?
 * Are multiple sections modeled or ignored?
@@ -32,6 +35,7 @@ Decide early:
 Start simple: one offering per course per term with a fixed cap.
 
 Potential Modeling Pitfalls
+
 These are the most likely trouble spots for a first Forge project:
 Prerequisite semantics
 Common ambiguity:
@@ -42,6 +46,7 @@ Common ambiguity:
 Advice: Start with AND + strictly earlier term. Expand later.
 
 Time modeling
+
 Students often overcomplicate semesters.
 Watch for:
 * Overly detailed calendars
@@ -69,6 +74,7 @@ Advice:
 Start with one student, verify correctness, then optionally scale.
 
 Optimization vs feasibility
+
 Forge is best at validity and counterexamples, not heavy optimization.
 Avoid initially:
 * “best schedule”
