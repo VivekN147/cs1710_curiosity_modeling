@@ -1,6 +1,6 @@
-# cs1710_curiosity_modeling
+# CSCI 1710 - Curiosity Modeling
 
-> As part of your project submission, we request a one page `README.md` file that provides a comprehensive overview of your implementation. This document should effectively communicate your approach and insights to someone who might be new to your chosen topic. At a minimum, you should address each of the following points:
+> As part of your project submission, we request a one page `README.md` file that provides a comprehensive overview of your implementation. This document should effectively communicate your approach and insights to someone who might be new to your chosen topic.
 
 > Your `README.md` should not only serve as a guide to your project but also reflect your understanding and the thought process behind your modeling decisions.
 
