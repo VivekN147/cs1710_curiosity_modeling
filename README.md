@@ -4,7 +4,8 @@ What do we want to model?
 * Given a student aiming to get some degree, plan out courses such that the student earns that degree while taking into account prerequisites and class sizes such that the course plan is feasible.
 
 From LLM:
-(1) Make the Idea Technically Well-Defined
+
+Make the Idea Technically Well-Defined
 Right now the scope is slightly broad. Consider pinning down:
 * Core entities (likely minimum model)
 * Student
