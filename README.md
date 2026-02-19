@@ -82,3 +82,21 @@ Avoid initially:
 
 Instead start with:
 * “exists a valid plan within k terms”
+
+## 3: Sigs and Preds
+`sig Student{}` will represent a student and will have field `ConcentrationReqs` and `CoursePlan`.
+
+`sig ConcentrationReqs` will represent concentration requirements, and it will contain fields like `course_a`, `course_b`, ... etc., with each of those being `lone`.
+
+`sig Course` will represent an individual course, with fields `enrollmentCap` (number) and `prereq_1`, `prereq_2` (Course), etc. Optionally will later add fall/spring restrictions and more complex boolean logic with prerequisite courses.
+
+`sig CoursePlan` will be similar to the lab 2 object with a "next" field representing successive semesters and a partial function representing an array like the binary search example from lecture.
+
+At a high level, we will specify
+- require that for a student to add a course, the prereqs will need to be satisfied
+- basic array well-formedness for the course plan in terms of taken courses
+- enrollment cap must not be exceeded
+- all concentration requirements must be met in the given number of semesters
+- well formedness enrollment has to be positive
+- a student cannot take a course twice
+- student can take 3-5 (or we can change this) courses per semester
