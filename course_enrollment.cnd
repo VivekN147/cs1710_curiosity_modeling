@@ -1,0 +1,46 @@
+constraints:
+  - orientation:
+      selector: next
+      directions: [directlyRight]
+  - group:
+      selector: courses
+      name: "Courses"
+
+  - group:
+      selector: required_courses
+      name: "Required Courses"
+
+  - orientation:
+      selector: concentration
+      directions: [directlyBelow]
+
+  - orientation:
+      selector: plan
+      directions: [directlyBelow]
+
+directives:
+  - atomColor:
+      selector: Student
+      value: "#02006e"
+
+  - atomColor:
+      selector: Semester
+      value: "#08a300"
+
+  - atomColor:
+      selector: Course
+      value: "#fcba03"
+
+  - atomColor:
+      selector: ConcentrationReqs
+      value: "#8900be"
+
+  - atomColor:
+      selector: CoursePlan
+      value: "#db1600"
+
+  # Show enrollmentCap as a label on each Course node
+  - attribute:
+      field: enrollmentCap
+
+  - flag: hideDisconnectedBuiltIns
