@@ -276,3 +276,448 @@ test suite for noDuplicateCourses {
     some s: Semester | s.next = s 
   } is unsat
 }
+
+test suite for SatisfiesPrereqs {
+
+  -- A student takes C2 in S2 and its only prereq (C1) was taken in S1
+  example prereqTakenEarlier is SatisfiesPrereqs for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1 + `S2
+    Course = `C1 + `C2
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    `S1.next = `S2
+    no `S2.next
+
+    no `C1.prereqs
+    `C2.prereqs = `C1 -> `True
+
+    `S1.courses = `C1 -> `True
+    `S2.courses = `C2 -> `True
+
+    no `Conc1.required_courses
+    `C1.enrollmentCap = 5
+    `C2.enrollmentCap = 5
+  }
+
+  -- A student takes C2 in S1 but its prereq C1 has not been taken yet
+  example prereqNotTaken is {not SatisfiesPrereqs} for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1 + `S2
+    Course = `C1 + `C2
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    `S1.next = `S2
+    no `S2.next
+
+    no `C1.prereqs
+    `C2.prereqs = `C1 -> `True
+
+    `S1.courses = `C2 -> `True
+    `S2.courses = `C1 -> `True
+
+    no `Conc1.required_courses
+    `C1.enrollmentCap = 5
+    `C2.enrollmentCap = 5
+  }
+
+  -- A student takes C2 in the same semester as its prereq C1
+  example prereqSameSemester is {not SatisfiesPrereqs} for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1 + `C2
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    no `C1.prereqs
+    `C2.prereqs = `C1 -> `True
+
+    `S1.courses = `C1 -> `True + `C2 -> `True
+
+    no `Conc1.required_courses
+    `C1.enrollmentCap = 5
+    `C2.enrollmentCap = 5
+  }
+
+  -- A course with no prereqs can be taken freely
+  example noPrereqs is SatisfiesPrereqs for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    no `C1.prereqs
+    `S1.courses = `C1 -> `True
+
+    no `Conc1.required_courses
+    `C1.enrollmentCap = 5
+  }
+
+  assert { SatisfiesPrereqs } is sat
+
+  -- If SatisfiesPrereqs holds, no student takes a course whose prereq they
+  -- haven't taken in an earlier semester
+  assert {
+    SatisfiesPrereqs
+    some st: Student, s: Semester, c: Course, prereq: Course | {
+      semesterInPlan[st, s]
+      courseInSemester[s, c]
+      c.prereqs[prereq] = True
+      not takenBefore[st, prereq, s]
+    }
+  } is unsat
+
+  -- A prereq taken in a later semester does not satisfy the requirement
+  assert {
+    SatisfiesPrereqs
+    some st: Student, c: Course, prereq: Course | {
+      some disj sEarly, sLate: Semester | {
+        semesterInPlan[st, sEarly]
+        semesterInPlan[st, sLate]
+        semesterBefore[sEarly, sLate]
+        courseInSemester[sLate, c]
+        c.prereqs[prereq] = True
+        courseInSemester[sEarly, prereq]
+      }
+    }
+  } is sat
+
+  -- Prereq taken in the same semester is insufficient
+  assert {
+    SatisfiesPrereqs
+    some st: Student, s: Semester, c: Course, prereq: Course | {
+      semesterInPlan[st, s]
+      courseInSemester[s, c]
+      courseInSemester[s, prereq]
+      c.prereqs[prereq] = True
+      no sPrev: Semester | {
+        semesterInPlan[st, sPrev]
+        semesterBefore[sPrev, s]
+        courseInSemester[sPrev, prereq]
+      }
+    }
+  } is unsat
+
+  -- SatisfiesPrereqs is compatible with all other predicates
+  assert {
+    SatisfiesPrereqs
+    SatisfiesConcentrationReqs
+    SatisfiesCaps
+    wellFormedPlan
+    wellFormedCourses
+  } is sat
+}
+
+test suite for SatisfiesConcentrationReqs {
+
+  -- Required course is taken somewhere in the plan
+  example requiredCourseTaken is SatisfiesConcentrationReqs for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    `Conc1.required_courses = `C1 -> `True
+
+    `S1.courses = `C1 -> `True
+
+    no `C1.prereqs
+    `C1.enrollmentCap = 5
+  }
+
+  -- Required course is never taken
+  example requiredCourseNotTaken is {not SatisfiesConcentrationReqs} for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1 + `C2
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    `Conc1.required_courses = `C1 -> `True
+    `S1.courses = `C2 -> `True
+
+    no `C1.prereqs
+    no `C2.prereqs
+    `C1.enrollmentCap = 5
+    `C2.enrollmentCap = 5
+  }
+
+  -- Required course taken in a later semester still satisfies
+  example requiredCourseTakenLater is SatisfiesConcentrationReqs for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1 + `S2
+    Course = `C1 + `C2
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    `S1.next = `S2
+    no `S2.next
+
+    `Conc1.required_courses = `C1 -> `True
+    `S1.courses = `C2 -> `True
+    `S2.courses = `C1 -> `True
+
+    no `C1.prereqs
+    no `C2.prereqs
+    `C1.enrollmentCap = 5
+    `C2.enrollmentCap = 5
+  }
+
+  -- A concentration with no required courses is satisfied
+  example noRequiredCourses is SatisfiesConcentrationReqs for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    no `Conc1.required_courses
+    `S1.courses = `C1 -> `True
+
+    no `C1.prereqs
+    `C1.enrollmentCap = 5
+  }
+
+  -- asserts
+
+  assert { SatisfiesConcentrationReqs } is sat
+
+  -- If SatisfiesConcentrationReqs holds, every required course must appear
+  -- in at least one semester of the student's plan
+  assert {
+    SatisfiesConcentrationReqs
+    some st: Student, c: Course | {
+      st.concentration.required_courses[c] = True
+      no s: Semester | {
+        semesterInPlan[st, s]
+        courseInSemester[s, c]
+      }
+    }
+  } is unsat
+
+  -- A required course taken in a sememster NOT in the plan does not count
+  assert {
+    SatisfiesConcentrationReqs
+    some st: Student, c: Course, s: Semester | {
+      st.concentration.required_courses[c] = True
+      courseInSemester[s, c]
+      not semesterInPlan[st, s]
+      no s2: Semester | semesterInPlan[st, s2] and courseInSemester[s2, c]
+    }
+  } is unsat
+
+  -- Mapping a course to False in required_courses does not require it to be taken
+  assert {
+    SatisfiesConcentrationReqs
+    some st: Student, c: Course | {
+      st.concentration.required_courses[c] = False
+      no s: Semester | semesterInPlan[st, s] and courseInSemester[s, c]
+    }
+  } is sat
+
+  -- SatisfiesConcentrationReqs is compatible with all other predicates
+  assert {
+    SatisfiesPrereqs
+    SatisfiesConcentrationReqs
+    SatisfiesCaps
+    wellFormedPlan
+    wellFormedCourses
+  } is sat
+}
+
+test suite for SatisfiesCaps {
+
+  -- One student takes a course whose cap is 1
+  example exactlyAtCap is SatisfiesCaps for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    `S1.courses = `C1 -> `True
+    `C1.enrollmentCap = 1
+    no `C1.prereqs
+    no `Conc1.required_courses
+  }
+
+  -- Two students both take the same course in the same semester, but cap is 1
+  example overCapacity is {not SatisfiesCaps} for {
+    Student = `Stu1 + `Stu2
+    CoursePlan = `Plan1 + `Plan2
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu2.plan = `Plan2
+    `Stu1.concentration = `Conc1
+    `Stu2.concentration = `Conc1
+    `Plan1.first = `S1
+    `Plan2.first = `S1
+    no `S1.next
+
+    `S1.courses = `C1 -> `True
+    `C1.enrollmentCap = 1
+    no `C1.prereqs
+    no `Conc1.required_courses
+  }
+
+  -- Two students take the same course but in different semesters
+  example sameCourseDifferentSemesters is SatisfiesCaps for {
+    Student = `Stu1 + `Stu2
+    CoursePlan = `Plan1 + `Plan2
+    ConcentrationReqs = `Conc1
+    Semester = `S1 + `S2
+    Course = `C1
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu2.plan = `Plan2
+    `Stu1.concentration = `Conc1
+    `Stu2.concentration = `Conc1
+
+    `Plan1.first = `S1
+    no `S1.next
+    `Plan2.first = `S2
+    no `S2.next
+
+    `S1.courses = `C1 -> `True
+    `S2.courses = `C1 -> `True
+    `C1.enrollmentCap = 1
+    no `C1.prereqs
+    no `Conc1.required_courses
+  }
+
+  -- A course not taken by anyone satisfies its cap.
+  example unEnrolledCourse is SatisfiesCaps for {
+    Student = `Stu1
+    CoursePlan = `Plan1
+    ConcentrationReqs = `Conc1
+    Semester = `S1
+    Course = `C1 + `C2
+    Boolean = `True + `False
+    True = `True
+    False = `False
+
+    `Stu1.plan = `Plan1
+    `Stu1.concentration = `Conc1
+    `Plan1.first = `S1
+    no `S1.next
+
+    `S1.courses = `C1 -> `True
+    `C1.enrollmentCap = 5
+    `C2.enrollmentCap = 1
+    no `C1.prereqs
+    no `C2.prereqs
+    no `Conc1.required_courses
+  }
+
+  assert { SatisfiesCaps } is sat
+
+  -- If SatisfiesCaps holds, the number of students in any course/semester
+  -- pair never exceeds that course's cap
+  assert {
+    SatisfiesCaps
+    some s: Semester, c: Course | {
+      #{st: Student | semesterInPlan[st, s] and courseInSemester[s, c]}
+        > c.enrollmentCap
+    }
+  } is unsat
+
+  -- A course with enrollmentCap = 0 can never be taken by anyone
+  assert {
+    SatisfiesCaps
+    some st: Student, s: Semester, c: Course | {
+      c.enrollmentCap = 0
+      semesterInPlan[st, s]
+      courseInSemester[s, c]
+    }
+  } is unsat
+
+  -- SatisfiesCaps is compatible with all other predicates
+  assert {
+    SatisfiesPrereqs
+    SatisfiesConcentrationReqs
+    SatisfiesCaps
+    wellFormedPlan
+    wellFormedCourses
+    validCourseLoad
+    noDuplicateCourses
+  } is sat
+}

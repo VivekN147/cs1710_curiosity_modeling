@@ -2,38 +2,25 @@
 
 option run_sterling "course_enrollment.cnd"
 
--- using these to model sets with pfuncs, maybe we switch to relational Forge with permission?
+-- modeling booleans
 abstract sig Boolean {}
 one sig True, False extends Boolean {}
 
 -- a course offered by the university
 sig Course {
     enrollmentCap: one Int,
-    // prereq_1: lone Course,
-    // prereq_2: lone Course,
-    // prereq_3: lone Course
     prereqs: pfunc Course -> Boolean
-    -- add more prereqs as desired
-    -- Vivek's Note: I made this a pfunc since adding more prereqs doesn't scale great
 }
 
 -- concentration requirements
 sig ConcentrationReqs {
-    // course_a: lone Course,
-    // course_b: lone Course,
-    // course_c: lone Course,
-    // course_d: lone Course
     required_courses: pfunc Course -> Boolean
-    -- add more concentration requirements as desired
-    -- Vivek's Note: I made this a pfunc since adding more concentration reqs doesn't scale great
 }
 
 -- a semester in the plan
 sig Semester {
     next: lone Semester,
     courses: pfunc Course -> Boolean
-    // lastIndex: one Int
-    -- Vivek's Note: instead of using lastIndex to find where the last semester is, we can use "lone" and just check some/none
 }
 
 -- points to a starting semester
