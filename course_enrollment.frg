@@ -158,4 +158,6 @@ run {
   wellFormedCourses
   validCourseLoad
   noDuplicateCourses
+
+  #{c: Course | some st: Student | st.concentration.required_courses[c] = True} >= 2
 } for 4 Int, exactly 1 Student, exactly 1 CoursePlan, exactly 1 ConcentrationReqs

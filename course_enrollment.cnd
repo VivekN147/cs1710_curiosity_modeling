@@ -3,22 +3,38 @@
 constraints:
   - orientation:
       selector: next
-      directions: [directlyRight]
-  - group:
-      selector: courses
-      name: "Courses"
+      directions: [directlyBelow]
 
-  - group:
+  - orientation:
+      selector: first
+      directions: [directlyBelow]
+
+  - orientation:
       selector: required_courses
-      name: "Required Courses"
+      directions: [directlyBelow]
 
   - orientation:
       selector: concentration
-      directions: [directlyBelow]
+      directions: [directlyLeft]
 
   - orientation:
       selector: plan
-      directions: [directlyBelow]
+      directions: [directlyRight]
+
+  - size:
+      selector: Semester
+      width: 150
+      height: 150
+
+  - size:
+      selector: ConcentrationReqs
+      width: 200
+      height: 200
+
+  - size:
+      selector: Course
+      width: 150
+      height: 150
 
 directives:
   - atomColor:
@@ -44,5 +60,14 @@ directives:
   # Show enrollmentCap as a label on each Course node
   - attribute:
       field: enrollmentCap
+
+  - attribute:
+      field: prereqs
+
+  - attribute:
+      field: required_courses
+
+  - attribute:
+      field: courses
 
   - flag: hideDisconnectedBuiltIns

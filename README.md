@@ -4,103 +4,6 @@
 
 > Your `README.md` should not only serve as a guide to your project but also reflect your understanding and the thought process behind your modeling decisions.
 
-## LLM Advice and Notes
-
-What do we want to model?
-
-- Given a student aiming to get some degree, plan out courses such that the student earns that degree while taking into account prerequisites and class sizes such that the course plan is feasible.
-
-From LLM:
-
-Make the Idea Technically Well-Defined
-
-Right now the scope is slightly broad. Consider pinning down:
-
-- Core entities (likely minimum model)
-- Student
-- Course
-- Term/Semester
-- Degree requirements
-- Prerequisite relation
-- Course capacity
-- Schedule/plan
-
-Key questions your model should answer
-
-Pick 2–4 concrete ones, for example:
-
-- Does a valid graduation plan exist within N semesters?
-- Can over-enrollment occur?
-- Are prerequisite chains always respected?
-- What is the minimum number of semesters needed?
-
-Be precise about capacity
-
-Decide early:
-
-- Is capacity global per course offering?
-- Are multiple sections modeled or ignored?
-- Is enrollment first-come or just a constraint?
-
-Start simple: one offering per course per term with a fixed cap.
-
-Potential Modeling Pitfalls
-
-These are the most likely trouble spots for a first Forge project:
-Prerequisite semantics
-Common ambiguity:
-
-- Must prereqs be completed in strictly earlier terms?
-- Can they be taken concurrently?
-- Are prereqs AND or OR?
-
-Advice: Start with AND + strictly earlier term. Expand later.
-
-Time modeling
-
-Students often overcomplicate semesters.
-Watch for:
-
-- Overly detailed calendars
-- Complex ordering relations
-- Unbounded term counts
-
-Advice:
-Model terms as a simple linear sequence of fixed length.
-
-- Degree requirements explosion
-- Degree rules can become messy fast:
-
-* Categories (e.g., electives vs core)
-* Credit counts
-* Multiple requirement types
-
-Advice:
-Start with:
-
-- Required course set
-- Maybe one elective bucket
-- Add realism only if the core model is stable.
-
-Capacity + multiple students
-
-- If you model many students early, the state space can blow up.
-
-Advice:
-Start with one student, verify correctness, then optionally scale.
-
-Optimization vs feasibility
-
-Forge is best at validity and counterexamples, not heavy optimization.
-Avoid initially:
-
-- “best schedule”
-- “minimum time” with complex objectives
-
-Instead start with:
-
-- “exists a valid plan within k terms”
-
 ## 1: Project Objective
 
 > **Project Objective:** What are you trying to model? Include a brief description that would give someone unfamiliar with the topic a basic understanding of your goal.
@@ -111,7 +14,7 @@ We are primarily trying to model the Brown course registration system from a stu
 
 > **Model Design and Visualization:** Give an overview of your model design choices, what checks or run statements you wrote, and what we should expect to see from an instance produced by the Sterling visualizer. How should we look at and interpret an instance created by your spec? Did you create a custom visualization, or did you use the default?
 
-[answer]
+The model uses multiple predicates to enforce both wellformedness as well as adherence to prerequisistes, concentration requirements, and enrollment caps. There is a run statement that includes all the wellformedness predicates and requirement predicates and ensures there is exactly 1 `Student`, `CoursePlan`, and `ConcentrationReqs`. We created a custom visualization, so the Sterling Visualizer should show a `Student` that has both a `CoursePlan` and a `ConcentrationReqs` directly to the east and west respectively. The `CoursePlan` will point to `Semsester`s, which can point to other `Semeseter`s. Each `Semester` has a field for the courses taken, and all the courses that are a field of `ConcentrationReqs` will be in those `Semester`s. `Course`s are also present to show the enrollment caps and the prereqs if any. An instance created by our spec shows a valid plan of courses to take through some amount of semesters such that all the concentration requirements are met, prerequisites are respected, and enrollment caps aren't violated.
 
 ## 3: Signatures and Predicates
 
@@ -119,13 +22,15 @@ We are primarily trying to model the Brown course registration system from a stu
 
 ### `sig`s
 
-`sig Student{}` will represent a student and will have field `ConcentrationReqs` and `CoursePlan`.
+`sig Student` will represent a student and will have field `ConcentrationReqs` and `CoursePlan`.
 
-`sig ConcentrationReqs` will represent concentration requirements, and it will contain fields like `course_a`, `course_b`, ... etc., with each of those being `lone`.
+`sig ConcentrationReqs` will represent concentration requirements, and it will contain a pfunc mapping `Course`s to `Boolean`s.
 
-`sig Course` will represent an individual course, with fields `enrollmentCap` (number) and `prereq_1`, `prereq_2` (Course), etc. Optionally will later add fall/spring restrictions and more complex boolean logic with prerequisite courses.
+`sig Course` will represent an individual course, with fields `enrollmentCap` (number) and a pfunc mapping `Course`s to `Boolean`s. Optionally will later add fall/spring restrictions and more complex boolean logic with prerequisite courses.
 
-`sig CoursePlan` will be similar to the lab 2 object with a "next" field representing successive semesters.
+`sig CoursePlan` will be have a "first" field representing the first `Semester`.
+
+`sig Semester` will represent a `Semester` that has a "next" field to another `Semester`, as well as a pfunc mapping `Course`s to `Boolean`s.
 
 ### `Pred`s
 
@@ -136,6 +41,20 @@ We are primarily trying to model the Brown course registration system from a stu
 `validCourseLoad` ensures every semester building block of a plan has between 3 and 5 courses.
 
 `noDuplicateCourses` ensures there are a single course is not located in two semesters of a student's plan.
+
+`courseInSemester` ensures that given a course and a semseter, that course is taken in that semester.
+
+`semesterInPlan` ensures that a semester is within a course plan either by being the first semester or being reachable via next.
+
+`semesterBefore` ensures that a semester comes directly before another semester.
+
+`takenBefore` ensures that a course was taken in a semester before the current semester.
+
+`SatisfiesPrereqs` ensures that for every course a student takes in their plan, all the prereqs must have been taken in a strictly earlier semester.
+
+`SatisifiesConcentrationReqs` ensures that every course required by the student's concentration appears somewhere in the course plan.
+
+`SatisfiesCaps` ensures that the number of students enrolled in a course doesn't exceed the enrollment cap of the course.
 
 At a high level, we will specify
 
@@ -151,61 +70,10 @@ At a high level, we will specify
 
 > **Testing:** What tests did you write to test your model itself? What tests did you write to verify properties about your domain area? Feel free to give a high-level overview of this.
 
-We wrote numerous tests for our model. We wrote unit example and assert statements for all predicates, testing both overconstraint and underconstraint bugs. For instance, we tested that `wellFormedCourses` would not allow any kind of cycle, whether direct or indirect, and that while `noDuplicateCourses` forbid courses from appearing multiple times in the same student's course plan, the same course could appear in different student's course plans. We also tested combinations of predicates, including that our well formed predicates were all satisfiable together to ensure that interaction did not accidentally cause any issues.
+We wrote numerous tests for our model. We wrote unit example and assert statements for all predicates, testing both overconstraint and underconstraint bugs. For instance, we tested that `wellFormedCourses` would not allow any kind of cycle, whether direct or indirect, and that while `noDuplicateCourses` forbid courses from appearing multiple times in the same student's course plan, the same course could appear in different student's course plans. We also tested combinations of predicates, including that our well formed predicates were all satisfiable together to ensure that interaction did not accidentally cause any issues. Testing for the requirement predicates involved testing whether prereqs where satisfied or not, whether course requirements had been met, and if enrollment caps had been violated. This also included testing edge cases like if prereqs were taken in the same semester as the course and required courses being taken in semester that weren't in the course plan. These requirement predicates were also tested in combination with the wellformedness predicates.
 
 ## 5: Documentation
 
 > **Documentation:** Make sure your model and test files are well-documented. This will help in understanding the structure and logic of your project.
 
 This is done.
-
-## Appendix
-
-### AI Citation
-
-AI was used in accordance with the initial task to help us both choose and then develop our idea. We used Gemini with the given prompt and to help us further realize the details by turning our list of desired properties into predicate names around which we could organize our implementation. We also used AI to fix syntax and other low-level issues with Froglet programming in our constraints.
-
-## Gemini Suggestions on Labor Division:
-
-This sounds like a fantastic CS1710 final project! Modeling a degree planner in Forge is a classic but challenging problem, primarily because the state space can blow up quickly if you aren't careful with your time/semester bounds. Adhering to the "start simple" advice from your context block is the best way to ensure your model actually runs without timing out the solver.
-
-Let's formalize your high-level constraints into clear, distinct predicates, and then establish a logical division of labor for two people.
-
-### Part 1: Defining the Predicates
-
-To keep the model clean, we should separate structural well-formedness (making sure the data structures are valid) from the domain logic (the actual university rules).
-
-Here are the clear predicate definitions based on your constraints:
-
-**Structural & Well-Formedness Predicates**
-
-- **`wellFormedPlan`**: Ensures the `CoursePlan` acts like a proper sequence of semesters. It enforces that the `next` relation forms a simple linear sequence (no loops, no branching) and that your partial function correctly maps semesters to the set of courses taken.
-- **`wellFormedCourses`**: Enforces basic course properties, specifically that `enrollmentCap > 0` for all courses.
-
-**Domain Logic (University Rules) Predicates**
-
-- **`validCourseLoad`**: Ensures that for any given semester in the `CoursePlan`, the cardinality of the courses assigned is between and .
-- **`noDuplicateCourses`**: Ensures that the intersection of courses taken in any two distinct semesters is empty, meaning a student cannot take a course twice.
-- **`prereqsSatisfied`**: The most complex rule. For any course taken in semester , all prerequisites (`prereq_1`, `prereq_2`) must belong to some semester that strictly precedes in the `CoursePlan`'s sequence.
-- **`reqsMet`**: Ensures that by the final semester in the `CoursePlan`, the union of all courses taken across all semesters contains all the courses specified in the student's `ConcentrationReqs`.
-- **`capsRespected`**: Ensures that the total number of students enrolled in any course during a specific semester does not exceed that course's `enrollmentCap`. _(Note: If you are starting with just 1 Student to keep the model simple, this predicate will pass trivially, but it's good to write it so it scales when you introduce `sig Student` as a set)._
-
----
-
-### Part 2: Divvying Up the Work
-
-A great way to split this project in Forge is by separating the **State/Structural Logistics** from the **Rules/Constraints**. This allows both partners to work in parallel without stepping on each other's toes.
-
-Here is the content converted into a valid Markdown table:
-
-| Task Category                  | Assignee     | Responsibilities                                                                                                                                                                                    | Why this makes sense                                                                                                                                                                                          |
-| ------------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Data Structures & State**    | **Person A** | • Write all `sig` definitions (`Student`, `Course`, `CoursePlan`, `ConcentrationReqs`).<br>• Write `wellFormedPlan` and `wellFormedCourses`.<br>• Write `validCourseLoad` and `noDuplicateCourses`. | Person A focuses on making sure the “board is set up correctly.” Dealing with Forge partial functions and linear traces (`next`) can be tricky, so one person should own the “semester array” logic.          |
-| **Business Logic & Relations** | **Person B** | • Write `prereqsSatisfied`.<br>• Write `reqsMet`.<br>• Write `capsRespected`.<br>• Set up the final `run` statements and test cases.                                                                | Person B focuses on relational algebra and graph traversal (e.g., using transitive closures like `^next` or `*next` to check prerequisites) and set theory (checking subsets for concentration requirements). |
-
-**Integration Phase (Together):**
-Once Person A has the semesters advancing correctly and Person B has the rules written, you pair-program the final `pred graduationIsPossible` which just `and`s all your predicates together, and use Forge to search for an instance.
-
----
-
-Would you like me to help draft the actual Forge/Alloy syntax for any of these specific predicates, such as the `prereqsSatisfied` relation or the `CoursePlan` partial function?
