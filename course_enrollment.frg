@@ -117,47 +117,58 @@ pred SatisfiesCaps {
 
 -- To be well formed, there can be no semester loops, and all semesters must be in the plan
 pred wellFormedPlan {
-    all s: Semester | not reachable[s, s, next]
-    
-    all s: Semester | {
-        some cp: CoursePlan | {
-            s = cp.first or reachable[s, cp.first, next]
-        }
+  -- semester not reachable form itself
+  all s: Semester | {
+    not reachable[s, s, next]
+  }
+  
+  -- semester is either first in course plan
+  -- or reachable from the first one
+  all s: Semester | {
+    some cp: CoursePlan | {
+      s = cp.first or reachable[s, cp.first, next]
     }
+  }
 }
 
 -- Cap must be greater than or equal to zero to be well formed
 pred wellFormedCourses {
-    all c: Course | c.enrollmentCap > 0
+  all c: Course | c.enrollmentCap > 0
 }
 
 -- To be a valid course load in a semester, there must be between 3 and 5 courses
 pred validCourseLoad {
-    all s: Semester | {
-        #{c: Course | courseInSemester[s, c]} >= 3
-        #{c: Course | courseInSemester[s, c]} <= 5
-    }
+  all s: Semester | {
+    -- for all semesteres, must be both more than or equal to 3 courses
+    -- and less then or equal to 5 courses
+    #{c: Course | courseInSemester[s, c]} >= 3
+    #{c: Course | courseInSemester[s, c]} <= 5
+  }
 }
 
 -- No course can be taken in two distinct semesters for a student's course plan
 pred noDuplicateCourses {
-    all st: Student | {
-        all s1, s2: Semester | {
-            (semesterInPlan[st, s1] and semesterInPlan[st, s2] and s1 != s2) implies {
-                no c: Course | courseInSemester[s1, c] and courseInSemester[s2, c]
-            }
+  all st: Student | {
+    all s1, s2: Semester | {
+      -- for all students and every pair of semesters, if both semesters
+      -- are in the students plan, this implies...
+      (semesterInPlan[st, s1] and semesterInPlan[st, s2] and s1 != s2) implies {
+        no c: Course | {
+          -- there are no courses in both semesters
+          courseInSemester[s1, c] and courseInSemester[s2, c]
         }
+      }
     }
+  }
 }
 
 run {
-    SatisfiesPrereqs
-    SatisfiesConcentrationReqs
-    SatisfiesCaps
+  SatisfiesPrereqs
+  SatisfiesConcentrationReqs
+  SatisfiesCaps
 
-    wellFormedPlan
-    wellFormedCourses
-    validCourseLoad
-    noDuplicateCourses
-    
+  wellFormedPlan
+  wellFormedCourses
+  validCourseLoad
+  noDuplicateCourses
 } for 4 Int, exactly 1 Student, exactly 1 CoursePlan, exactly 1 ConcentrationReqs

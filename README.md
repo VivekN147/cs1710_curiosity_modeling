@@ -105,7 +105,7 @@ Instead start with:
 
 > **Project Objective:** What are you trying to model? Include a brief description that would give someone unfamiliar with the topic a basic understanding of your goal.
 
-[answer]
+We are primarily trying to model the Brown course registration system from a student's perspective, including having to deal with concentration requirements, prerequisite courses, enrollment limits, and more. The goal is to determine an effective course plan for the student given these requirements to ensure an on-time graduation.
 
 ## 2: Model Design and Visualization
 
@@ -117,13 +117,25 @@ Instead start with:
 
 > **Signatures and Predicates:** At a high level, what do each of your sigs and preds represent in the context of the model? Justify the purpose for their existence and how they fit together.
 
+### `sig`s
+
 `sig Student{}` will represent a student and will have field `ConcentrationReqs` and `CoursePlan`.
 
 `sig ConcentrationReqs` will represent concentration requirements, and it will contain fields like `course_a`, `course_b`, ... etc., with each of those being `lone`.
 
 `sig Course` will represent an individual course, with fields `enrollmentCap` (number) and `prereq_1`, `prereq_2` (Course), etc. Optionally will later add fall/spring restrictions and more complex boolean logic with prerequisite courses.
 
-`sig CoursePlan` will be similar to the lab 2 object with a "next" field representing successive semesters and a partial function representing an array like the binary search example from lecture.
+`sig CoursePlan` will be similar to the lab 2 object with a "next" field representing successive semesters.
+
+### `Pred`s
+
+`wellFormedPlan` ensures that there are no semesters can reach themselves in the plan (i.e., no loops) and that all semesters are included in a plan.
+
+`wellFormedCourses` ensures that the cap of courses is greater than 0 (a course should not allow in 0 or a negative number of people).
+
+`validCourseLoad` ensures every semester building block of a plan has between 3 and 5 courses.
+
+`noDuplicateCourses` ensures there are a single course is not located in two semesters of a student's plan.
 
 At a high level, we will specify
 
@@ -139,13 +151,19 @@ At a high level, we will specify
 
 > **Testing:** What tests did you write to test your model itself? What tests did you write to verify properties about your domain area? Feel free to give a high-level overview of this.
 
-[answer]
+We wrote numerous tests for our model. We wrote unit example and assert statements for all predicates, testing both overconstraint and underconstraint bugs. For instance, we tested that `wellFormedCourses` would not allow any kind of cycle, whether direct or indirect, and that while `noDuplicateCourses` forbid courses from appearing multiple times in the same student's course plan, the same course could appear in different student's course plans. We also tested combinations of predicates, including that our well formed predicates were all satisfiable together to ensure that interaction did not accidentally cause any issues.
 
 ## 5: Documentation
 
 > **Documentation:** Make sure your model and test files are well-documented. This will help in understanding the structure and logic of your project.
 
-[answer]
+This is done.
+
+## Appendix
+
+### AI Citation
+
+AI was used in accordance with the initial task to help us both choose and then develop our idea. We used Gemini with the given prompt and to help us further realize the details by turning our list of desired properties into predicate names around which we could organize our implementation. We also used AI to fix syntax and other low-level issues with Froglet programming in our constraints.
 
 ## Gemini Suggestions on Labor Division:
 
