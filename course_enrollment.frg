@@ -8,98 +8,98 @@ one sig True, False extends Boolean {}
 
 -- a course offered by the university
 sig Course {
-    enrollmentCap: one Int,
-    prereqs: pfunc Course -> Boolean
+  enrollmentCap: one Int,
+  prereqs: pfunc Course -> Boolean
 }
 
 -- concentration requirements
 sig ConcentrationReqs {
-    required_courses: pfunc Course -> Boolean
+  required_courses: pfunc Course -> Boolean
 }
 
 -- a semester in the plan
 sig Semester {
-    next: lone Semester,
-    courses: pfunc Course -> Boolean
+  next: lone Semester,
+  courses: pfunc Course -> Boolean
 }
 
 -- points to a starting semester
 sig CoursePlan {
-    first: lone Semester
+  first: lone Semester
 }
 
 -- student who can take courses
 sig Student {
-    concentration: one ConcentrationReqs,
-    plan: one CoursePlan
+  concentration: one ConcentrationReqs,
+  plan: one CoursePlan
 }
 
 
 -- Helper: get all courses taken in a given semester
 pred courseInSemester[s: Semester, c: Course] {
-    s.courses[c] = True
+  s.courses[c] = True
 }
 
 -- Helper: get all semesters reachable from the plan's first semester (i.e., all semesters in the plan)
 pred semesterInPlan[st: Student, s: Semester] {
-    some st.plan.first and
-    (s = st.plan.first or reachable[s, st.plan.first, next])
+  some st.plan.first and
+  (s = st.plan.first or reachable[s, st.plan.first, next])
 }
 
 -- Helper: s1 comes strictly before s2 in the chain
 pred semesterBefore[s1: Semester, s2: Semester] {
-    reachable[s2, s1, next]
+  reachable[s2, s1, next]
 }
 
 -- Helper: course c was taken by student st in some semester strictly before s
 pred takenBefore[st: Student, c: Course, s: Semester] {
-    some sPrev: Semester | {
-        semesterInPlan[st, sPrev]
-        semesterBefore[sPrev, s]
-        courseInSemester[sPrev, c]
-    }
+  some sPrev: Semester | {
+    semesterInPlan[st, sPrev]
+    semesterBefore[sPrev, s]
+    courseInSemester[sPrev, c]
+  }
 }
 
 -- For every course a student takes in their plan, all prereqs must have been taken in a strictly earlier semester
 -- Future case: If we want to represent coreqs in our model, something will have to change
 pred SatisfiesPrereqs {
-    all st: Student | {
-        all s: Semester | {
-            semesterInPlan[st, s] implies {
-                all c: Course | {
-                    courseInSemester[s, c] implies {
-                        -- every prereq of c must have been taken before this semester
-                        all prereq: Course | {
-                            c.prereqs[prereq] = True => takenBefore[st, prereq, s]
-                        }
-                    }
-                }
+  all st: Student | {
+    all s: Semester | {
+      semesterInPlan[st, s] implies {
+        all c: Course | {
+          courseInSemester[s, c] implies {
+            -- every prereq of c must have been taken before this semester
+            all prereq: Course | {
+              c.prereqs[prereq] = True => takenBefore[st, prereq, s]
             }
+          }
         }
+      }
     }
+  }
 }
 
 -- Every course required by the student's concentration must appear somewhere in their plan
 pred SatisfiesConcentrationReqs {
-    all st: Student | {
-        all c: Course | {
-            st.concentration.required_courses[c] = True implies {
-                some s: Semester | {
-                    semesterInPlan[st, s]
-                    courseInSemester[s, c]
-                }
-            }
+  all st: Student | {
+    all c: Course | {
+      st.concentration.required_courses[c] = True implies {
+        some s: Semester | {
+          semesterInPlan[st, s]
+          courseInSemester[s, c]
         }
+      }
     }
+  }
 }
 
 -- The number of students enrolled in each course in each semester must not exceed that course's enrollmentCap
 pred SatisfiesCaps {
-    all s: Semester, c: Course | {
-        -- the set of students taking c in s has cardinality <= cap
-        #{st: Student | semesterInPlan[st, s] and courseInSemester[s, c]}
-            <= c.enrollmentCap
-    }
+  all s: Semester, c: Course | {
+    -- the set of students taking c in s has cardinality <= cap
+    #{st: Student | semesterInPlan[st, s] and courseInSemester[s, c]}
+      <= c.enrollmentCap
+  }
 }
 
 -- To be well formed, there can be no semester loops, and all semesters must be in the plan
@@ -149,6 +149,7 @@ pred noDuplicateCourses {
   }
 }
 
+// simple run
 run {
   SatisfiesPrereqs
   SatisfiesConcentrationReqs
@@ -161,3 +162,25 @@ run {
 
   #{c: Course | some st: Student | st.concentration.required_courses[c] = True} >= 2
 } for 4 Int, exactly 1 Student, exactly 1 CoursePlan, exactly 1 ConcentrationReqs
+
+// more complex run statement
+run {
+  SatisfiesPrereqs
+  SatisfiesConcentrationReqs
+  SatisfiesCaps
+
+  wellFormedPlan
+  wellFormedCourses
+  validCourseLoad
+  noDuplicateCourses
+
+  // 7 required courses (or more)
+  #{c: Course | some st: Student | st.concentration.required_courses[c] = True} >= 7
+  // 3 prereqs (or more)
+  #{c: Course | some pre: Course | c.prereqs[pre] = True} >= 3
+  // both needed and enrollment cap 1
+  some c: Course | {
+    all st: Student | st.concentration.required_courses[c] = True
+    c.enrollmentCap = 1
+  }
+} for 5 Int, exactly 2 Student, exactly 2 CoursePlan, exactly 2 ConcentrationReqs, exactly 4 Semester, exactly 12 Course

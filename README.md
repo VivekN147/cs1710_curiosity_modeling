@@ -64,13 +64,13 @@ At a high level, we will specify
 - all concentration requirements must be met in the given number of semesters
 - well formedness enrollment has to be positive
 - a student cannot take a course twice
-- student can take 3-5 (or we can change this) courses per semester
+- student can take 3-5 courses per semester
 
 ## 4: Testing
 
 > **Testing:** What tests did you write to test your model itself? What tests did you write to verify properties about your domain area? Feel free to give a high-level overview of this.
 
-We wrote numerous tests for our model. We wrote unit example and assert statements for all predicates, testing both overconstraint and underconstraint bugs. For instance, we tested that `wellFormedCourses` would not allow any kind of cycle, whether direct or indirect, and that while `noDuplicateCourses` forbid courses from appearing multiple times in the same student's course plan, the same course could appear in different student's course plans. We also tested combinations of predicates, including that our well formed predicates were all satisfiable together to ensure that interaction did not accidentally cause any issues. Testing for the requirement predicates involved testing whether prereqs where satisfied or not, whether course requirements had been met, and if enrollment caps had been violated. This also included testing edge cases like if prereqs were taken in the same semester as the course and required courses being taken in semester that weren't in the course plan. These requirement predicates were also tested in combination with the wellformedness predicates.
+We wrote numerous tests for our model. We wrote unit example and assert statements for all predicates, testing both overconstraint and underconstraint bugs. For instance, we tested that `wellFormedCourses` would not allow any kind of cycle, whether direct or indirect, and that while `noDuplicateCourses` forbids courses from appearing multiple times in the same student's course plan, the same course could appear in different student's course plans. We also tested combinations of predicates, including that our well formed predicates were all satisfiable together to ensure that interaction did not accidentally cause any issues. Testing for the requirement predicates involved testing whether prereqs where satisfied or not, whether course requirements had been met, and if enrollment caps had been violated. This also included testing edge cases like if prereqs were taken in the same semester as the course and required courses being taken in semesters that were not in the course plan. These requirement predicates were also tested in combination with the wellformedness predicates.
 
 ## 5: Documentation
 
