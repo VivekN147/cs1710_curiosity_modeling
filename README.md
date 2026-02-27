@@ -16,6 +16,8 @@ We are primarily trying to model the Brown course registration system from a stu
 
 The model uses multiple predicates to enforce both wellformedness as well as adherence to prerequisistes, concentration requirements, and enrollment caps. There is a run statement that includes all the wellformedness predicates and requirement predicates and ensures there is exactly 1 `Student`, `CoursePlan`, and `ConcentrationReqs`. We created a custom visualization, so the Sterling Visualizer should show a `Student` that has both a `CoursePlan` and a `ConcentrationReqs` directly to the east and west respectively. The `CoursePlan` will point to `Semsester`s, which can point to other `Semeseter`s. Each `Semester` has a field for the courses taken, and all the courses that are a field of `ConcentrationReqs` will be in those `Semester`s. `Course`s are also present to show the enrollment caps and the prereqs if any. An instance created by our spec shows a valid plan of courses to take through some amount of semesters such that all the concentration requirements are met, prerequisites are respected, and enrollment caps aren't violated.
 
+A second run statement was also added, which simply shows a more complicated scenario involving prereqs, multiple students, more semesters, etc. The custom visualization struggles more here but the general structure of a course plan pointing to semesters remains.
+
 ## 3: Signatures and Predicates
 
 > **Signatures and Predicates:** At a high level, what do each of your sigs and preds represent in the context of the model? Justify the purpose for their existence and how they fit together.
