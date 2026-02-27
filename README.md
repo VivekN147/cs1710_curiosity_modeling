@@ -16,7 +16,9 @@ We are primarily trying to model the Brown course registration system from a stu
 
 The model uses multiple predicates to enforce both wellformedness as well as adherence to prerequisistes, concentration requirements, and enrollment caps. There is a run statement that includes all the wellformedness predicates and requirement predicates and ensures there is exactly 1 `Student`, `CoursePlan`, and `ConcentrationReqs`. We created a custom visualization, so the Sterling Visualizer should show a `Student` that has both a `CoursePlan` and a `ConcentrationReqs` directly to the east and west respectively. The `CoursePlan` will point to `Semsester`s, which can point to other `Semeseter`s. Each `Semester` has a field for the courses taken, and all the courses that are a field of `ConcentrationReqs` will be in those `Semester`s. `Course`s are also present to show the enrollment caps and the prereqs if any. An instance created by our spec shows a valid plan of courses to take through some amount of semesters such that all the concentration requirements are met, prerequisites are respected, and enrollment caps aren't violated.
 
-A second run statement was also added, which simply shows a more complicated scenario involving prereqs, multiple students, more semesters, etc. The custom visualization struggles more here but the general structure of a course plan pointing to semesters remains.
+A second run statement was also added, which simply shows a more complicated scenario involving `prereqs`, multiple `Student`s, more `Semester`s, etc. The custom visualization struggles somewhat here but the general structure of a `CoursePlan` pointing to successive `Semester`s remains, as do the inner partial function fields.
+
+Of note, we treated modeling the basic logic of a singular `Student` who takes courses in a `CoursePlan` as our base goal; additional functionality for this single student such as course load, duplication, and prereq constraints was considered our target goal; and full interaction with other `Student`s and `enrollmentCap`s was our stretch goal. While we implemented the full functionality for our base and target goals, we ran out of time to sucessfully implement full interaction between `Student`s. In particular, we did not add `sigs`/fields representing years and fall or spring classification to assign to `Semester`s, so Forge models the `Semester`s as per-student and caps are never challenged in practice. We did, however, implement the basic structure of an `enrollmentCap` and the basic ideass it must satisfy. A complete implementation of our stretch goal, combined with perhaps replacing partial functions with `sets` in relational Forge, along with our stretch-strech goal of complex boolean valued `prereq`s (like Brown has for intro CS), could make for an interesting final project.
 
 ## 3: Signatures and Predicates
 
@@ -28,7 +30,7 @@ A second run statement was also added, which simply shows a more complicated sce
 
 `sig ConcentrationReqs` will represent concentration requirements, and it will contain a pfunc mapping `Course`s to `Boolean`s.
 
-`sig Course` will represent an individual course, with fields `enrollmentCap` (number) and a pfunc mapping `Course`s to `Boolean`s. Optionally will later add fall/spring restrictions and more complex boolean logic with prerequisite courses.
+`sig Course` will represent an individual course, with fields `enrollmentCap` (number) and a pfunc mapping `Course`s to `Boolean`s. Optionally will later add fall/spring restrictions and more complex boolean logic with prerequisite courses (stretch and stretch-stretch goals [and final project ideas], respectively).
 
 `sig CoursePlan` will be have a "first" field representing the first `Semester`.
 
@@ -36,29 +38,29 @@ A second run statement was also added, which simply shows a more complicated sce
 
 ### `Pred`s
 
-`wellFormedPlan` ensures that there are no semesters can reach themselves in the plan (i.e., no loops) and that all semesters are included in a plan.
+`wellFormedPlan` ensures that there are no `Semester` can reach itself in the plan (i.e., no loops) and that all `Semester`s are included in a `CoursePlan`.
 
-`wellFormedCourses` ensures that the cap of courses is greater than 0 (a course should not allow in 0 or a negative number of people).
+`wellFormedCourses` ensures that the cap of `Course`s is greater than 0 (a `Course` should not allow in 0 or a negative number of people).
 
-`validCourseLoad` ensures every semester building block of a plan has between 3 and 5 courses.
+`validCourseLoad` ensures every `Semester` building block of a plan has between 3 and 5 courses.
 
-`noDuplicateCourses` ensures there are a single course is not located in two semesters of a student's plan.
+`noDuplicateCourses` ensures there are a single course is not located in two `Semester's` of a student's plan.
 
-`courseInSemester` ensures that given a course and a semseter, that course is taken in that semester.
+`courseInSemester` ensures that given a `Course` and a `Semseter`, that course is taken in that `Semester`.
 
-`semesterInPlan` ensures that a semester is within a course plan either by being the first semester or being reachable via next.
+`semesterInPlan` ensures that a `Semester` is within a `CoursePlan` either by being the first `Semester` or being reachable via next.
 
-`semesterBefore` ensures that a semester comes directly before another semester.
+`semesterBefore` ensures that a `Semester` comes directly before another `Semester`.
 
-`takenBefore` ensures that a course was taken in a semester before the current semester.
+`takenBefore` ensures that a `Course` was taken in a `Semester` before the current `Semester`.
 
-`SatisfiesPrereqs` ensures that for every course a student takes in their plan, all the prereqs must have been taken in a strictly earlier semester.
+`SatisfiesPrereqs` ensures that for every `Course` a student takes in their `CoursePlan`, all the prereqs must have been taken in a strictly earlier `Semester`.
 
-`SatisifiesConcentrationReqs` ensures that every course required by the student's concentration appears somewhere in the course plan.
+`SatisifiesConcentrationReqs` ensures that every `Course` required by the student's concentration appears somewhere in the course plan.
 
-`SatisfiesCaps` ensures that the number of students enrolled in a course doesn't exceed the enrollment cap of the course.
+`SatisfiesCaps` ensures that the number of students enrolled in a `Course` doesn't exceed the enrollment cap of the `Course`.
 
-At a high level, we will specify
+At a high level, we specified the following (used to generate our `pred`s):
 
 - require that for a student to add a course, the prereqs will need to be satisfied
 - basic array well-formedness for the course plan in terms of taken courses
